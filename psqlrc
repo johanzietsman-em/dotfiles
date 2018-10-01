@@ -1,0 +1,137 @@
+-- References
+-- 1. https://robots.thoughtbot.com/an-explained-psqlrc
+-- 2. https://robots.thoughtbot.com/improving-the-command-line-postgres-experience
+-- 3. http://www.craigkerstiens.com/2013/02/13/How-I-Work-With-Postgres/
+-- 4. https://github.com/hgmnz/dotfiles/blob/master/psqlrc
+-- 5. http://arjanvandergaag.nl/blog/working-with-postgresql-on-the-command-line.html
+-- 6. https://www.digitalocean.com/community/tutorials/how-to-customize-the-postgresql-prompt-with-psqlrc-on-ubuntu-14-04
+-- 7. https://github.com/okbob/pspg
+-- 8. http://okbob.blogspot.cz/2017/07/i-hope-so-every-who-uses-psql-uses-less.html
+-- 9. https://tapoueh.org/blog/2017/12/setting-up-psql-the-postgresql-cli/
+--10. http://raghavt.blogspot.co.za/2011/11/psqlrc-file-for-dbas.html
+--11. https://www.periscopedata.com/blog/optimizing-your-psql
+
+
+-- TODO
+-- If a vim server called 'PSQL' has been started, use it!
+-- Start vim server with: `{g,}vim --servername PSQL`
+-- \setenv EDITOR 'vim --servername PSQL --remote-tab-wait-silent'
+
+
+\set QUIET 1
+
+--%n
+--    The current user name
+--%/
+--    The current database
+--%#
+--    > for regular users, # for database superusers.
+--%R
+--    Expected input indicator, hinting when you have unbalanced quotes or missed a semicolon.
+--%x
+--    Current transaction status: nothing when there’s no transaction, * if there is, ! if the transaction has failed. 
+    
+-- \set PROMPT1 '%n@%/\n%R%x%# '
+-- [user]@[host]:[port]/[db]['*' if we are in a transaction]['#' if we are root-like; '>' otherwise]
+-- \set PROMPT1 '%n@%m:%>/%/%x%# '
+-- \set PROMPT1 '%[%033[1m%]%M %n@%/%R%[%033[0m%]%# '
+-- \set PROMPT1 '%[%033[33;1m%]%x%[%033[0m%]%[%033[1m%]%/%[%033[0m%]%R%# '
+\set PROMPT1 '%n@%m %~%R%x%# '
+
+-- Ensure second prompt is empty, to facilitate easier copying of multiline SQL statements from a psql session into other
+-- tools / text editors.
+\set PROMPT2 ''
+
+\set HISTFILE ~/.psql_history- :DBNAME
+
+-- Make history ignore all lines entered that were preceded by spaces, and ignore any entries that matched the previous line entered.
+\set HISTCONTROL ignoreboth
+
+-- Ensure autocompleted keywords stay uppercase
+\set COMP_KEYWORD_CASE upper
+
+-- Instead of displaying nulls as blank space, which look the same as empty strings (but are not the same!), show nulls as [NULL].
+-- \pset null '[NULL]'
+\pset null NULL
+
+-- Show pretty lines around the outside of select results.
+\pset border 2
+
+-- Show pretty unicode lines between rows and columns in select results.
+\pset linestyle unicode
+
+-- Sets the border drawing style for the unicode line style to one of single or double.
+\pset unicode_border_linestyle double
+
+-- Sets the column drawing style for the unicode line style to one of single or double.
+\pset unicode_column_linestyle single
+
+-- Sets the header drawing style for the unicode line style to one of single or double.
+\pset unicode_header_linestyle double
+
+-- Within columns, wrap long lines so that select results still fit on the display.
+\pset format wrapped
+
+-- Set client encoding to UTF8 (to match what is on the server)
+\encoding UTF8
+
+-- Be verbose about feedback
+\set VERBOSITY verbose
+
+-- Show the application_name in pg_stat_activity.
+-- Good database citizens set this field so we know who to blame when a query hogs resources,
+-- or somebody stays idle in transaction for too long.
+set application_name to gemsbok;
+
+-- Set bytea output to show as many ASCII letters as possible.
+-- (Handy if you are storing text whose encoding you do not know in bytea columns.)
+set bytea_output to escape;
+
+-- From: https://tapoueh.org/blog/2017/12/setting-up-psql-the-postgresql-cli/
+-- Transaction settings
+-- It allows psql to know that it is not to continue trying to execute all your commands when a previous one is throwing an error.
+\set ON_ERROR_STOP on
+
+-- When set to on, if a statement in a transaction block generates an error, the error is ignored and the transaction continues. 
+-- When set to interactive, such errors are only ignored in interactive sessions, and not when reading script files. When unset 
+-- or set to off, a statement in a transaction block that generates an error aborts the entire transaction.
+\set ON_ERROR_ROLLBACK interactive
+
+\x auto
+
+-- https://github.com/okbob/pspg
+-- http://okbob.blogspot.cz/2017/07/i-hope-so-every-who-uses-psql-uses-less.html
+-- Themes
+-- 0 black & white
+-- 1 Midnight Commander like
+-- 2 FoxPro like
+-- 3 Pdmenu like
+-- 4 White theme
+-- 5 Mutt like
+-- 6 PCFand like
+-- 7 Green theme
+-- 8 Blue theme
+-- 9 Word Perfect like
+--10 Low contrast blue theme
+--11 Dark cyan/black mode
+--12 Paradox like
+--13 dBase IV retro style
+--14 dBase IV retro style (Magenta labels)
+
+-- Switch pagers with :x and :xx commands
+\set x '\\setenv PAGER less'
+\set xx '\\setenv PAGER \'pspg -bX -s 5 --no-mouse\''
+:xx
+
+-- Don't exit with ctrl-d unless you press it twice
+\set IGNOREEOF 2
+
+-- My regularly used queries
+\set users 'SELECT DISTINCT usename AS "User", datname AS "DB", application_name AS "App Name", client_addr AS "IP Address", client_hostname AS "Host", backend_start AS "Since" FROM pg_stat_activity;'
+
+
+-- Show how long it takes to run each query.
+-- Has to be the last statement unless you want to see how long some of the commands above take to complete
+\timing
+
+\unset QUIET
